@@ -5,6 +5,7 @@ typedef struct {
 #define nec(a) ((nec_array*)a - 1)
 #define nec_size(a) (a ? nec(a)->size : 0)
 #define nec_realloc(a, s) a = realloc(a, s * sizeof(*a) + sizeof(nec_array))
+#define nec_free(a) ({ void* b = (nec_array*)a - 1; free(b); a = 0; })
 #define nec_realloc_typecast(t, a, s) a = realloc(a, s * sizeof(t) + sizeof(nec_array))
 #define nec_push(a, v)\
 {\
@@ -63,3 +64,6 @@ typedef struct {
         }\
     }\
 }
+
+
+//TODO: add nec_push_norealloc
