@@ -2,6 +2,27 @@
 #include<stdlib.h>
 #include<nec.h>
 
+double stod(char* s)
+{
+    double v = 0;
+    int i = 0;
+    int point = 0;
+    if(s[0] == '-') i = 1;
+    while(s[i] != '\0')
+    {
+        if(s[i] == '.')
+        {
+            point = i++;
+            continue;
+        }
+        v *= 10;
+        v += s[i++] - '0';
+    }
+    if(point) while(--i > point) v *= 0.1;
+    if(s[0] == '-') v = -v;
+    return v;
+}
+
 struct json;
 struct json
 {
@@ -36,7 +57,7 @@ unsigned int json_get(json *o, char* key)
             if(o->keys[i][j] != key[j]) break;
             if(o->keys[i][j] == '\0' && key[j] == '\0')
             {
-                return o->keys[i][j + 1];
+                return stod(&o->keys[i][j + 1]);
             }
             if(o->keys[i][j] == '\0' || key[j] == '\0') j = -2;
             j++;
@@ -46,38 +67,13 @@ unsigned int json_get(json *o, char* key)
     return 0;
 }
 
-int stoi(char* s)
+void keyappend(char* key, int v)
 {
-    int v = 0;
-    int i = 0;
-    if(s[0] == '-') i = 1;
-    while(s[i] != '\0')
+    while(v > 0)
     {
-        v *= 10;
-        v += s[i++] - '0';
+        nec_push(key, v % 10);
+        v *= 0.1;
     }
-    if(s[0] == '-') v = -v;
-    return v;
-}
-double stod(char* s)
-{
-    double v = 0;
-    int i = 0;
-    int point = 0;
-    if(s[0] == '-') i = 1;
-    while(s[i] != '\0')
-    {
-        if(s[i] == '.')
-        {
-            point = i++;
-            continue;
-        }
-        v *= 10;
-        v += s[i++] - '0';
-    }
-    if(point) while(--i > point) v *= 0.1;
-    if(s[0] == '-') v = -v;
-    return v;
 }
 
 json parse(char* data, int i)
@@ -109,52 +105,36 @@ json parse(char* data, int i)
 
             if(v[nec_size(v) - 2] == '"')
             {
-                nec_push(k, nec_size(root.strings));
-                nec_push(root.keys, k);
+                keyappend(k, nec_size(root.strings));
                 v[nec_size(v) - 2] = '\0';
-                nec_push(root.strings, v);
+                char* value = malloc(nec_size(v));
+                for(int j = 0; j < nec_size(v); j++) value[j] = v[j];
+                nec_push(root.strings, value);
+            }
+            else if(v[0] == 't' || v[0] == 'f')
+            {
+                keyappend(k, nec_size(root.booleans));
+                nec_push(root.booleans, v[0] == 't' ? 1 : 0);
             }
             else
             {
-                if(v[0] == 't')
+                double val = stod(v);
+                double temp = val;
+                if(temp < 0) temp = -val;
+                if(temp - (int)temp == 0.0)
                 {
-                    nec_push(k, nec_size(root.booleans));
-                    nec_push(root.keys, k);
-                    nec_push(root.booleans, 1);
-                }
-                else if(v[0] == 'f')
-                {
-                    nec_push(k, nec_size(root.booleans));
-                    nec_push(root.keys, k);
-                    nec_push(root.booleans, 0);
+                    keyappend(k, nec_size(root.ints));
+                    nec_push(root.ints, val);
                 }
                 else
                 {
-                    char isint = 1;
-                    for(int j = 0; j < nec_size(v); j++)
-                    {
-                        if(v[j] == '.')
-                        {
-                            isint = 0;
-                            break;
-                        }
-                    }
-                    if(isint)
-                    {
-                        nec_push(k, nec_size(root.ints));
-                        nec_push(root.keys, k);
-                        nec_push(root.ints, stoi(v));
-                    }
-                    else
-                    {
-                        nec_push(k, nec_size(root.doubles));
-                        nec_push(root.keys, k);
-                        nec_push(root.doubles, stod(v));
-                    }
+                    keyappend(k, nec_size(root.doubles));
+                    nec_push(root.doubles, val);
                 }
-                nec_free(v);
             }
 
+            nec_push(root.keys, k);
+            nec_free(v);
             k = 0;
             v = 0;
 
@@ -179,7 +159,7 @@ json parse(char* data, int i)
         {
             nec_push(v, data[i]);
         }
-        printf("%c %d\n", data[i], state);
+        // printf("%c %d\n", data[i], state);
     }
     printf("error");
 }
@@ -188,6 +168,8 @@ int main()
 {
     char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false,}";
     json o = parse(data, 0);
+
+    // printf("k[]=%d\n", o.ints[json_get(&o, "ajdi")]);
 
     printf("INTS:\n");
     for(int i = 0; i < nec_size(o.ints); i++)
