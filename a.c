@@ -1,190 +1,19 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<nec.h>
-
-double stod(char* s)
-{
-    double v = 0;
-    int i = 0;
-    int point = 0;
-    if(s[0] == '-') i = 1;
-    while(s[i] != '\0')
-    {
-        if(s[i] == '.')
-        {
-            point = i++;
-            continue;
-        }
-        v *= 10;
-        v += s[i++] - '0';
-    }
-    if(point) while(--i > point) v *= 0.1;
-    if(s[0] == '-') v = -v;
-    return v;
-}
-
-struct json;
-struct json
-{
-    struct json *objects;
-    int* ints;
-    double* doubles;
-    char** strings;
-    char* booleans;
-    char** keys;
-};
-typedef struct json json;
-
-json json_init()
-{
-    json o;
-    o.objects = 0;
-    o.ints = 0;
-    o.doubles = 0;
-    o.strings = 0;
-    o.booleans = 0;
-    o.keys = 0;
-    return o;
-}
-
-unsigned int json_get(json *o, char* key)
-{
-    for(unsigned int i = 0; i < nec_size(o->keys); i++)
-    {
-        int j = 0;
-        while(j >= 0)
-        {
-            if(o->keys[i][j] != key[j]) break;
-            if(o->keys[i][j] == '\0' && key[j] == '\0')
-            {
-                char *s = &(o->keys[i][j + 1]);
-                int v = 0;
-                int it = 0;
-                while(s[it] != '\0')
-                {
-                    v *= 10;
-                    v += s[it++];
-                }
-                return v;
-            }
-            if(o->keys[i][j] == '\0' || key[j] == '\0') j = -2;
-            j++;
-        }
-    }
-    printf("JSON: object not found.\n");
-    return 0;
-}
-
-void keyappend(char** key, int v)
-{
-    while(v > 0)
-    {
-        nec_push(*key, v % 10);
-        v *= 0.1;
-    }
-    nec_push(*key, '\0');
-}
-
-json parse(char* data, int *i, int mode)
-{
-    json root = json_init();
-
-    int state = 0;
-    int string = 0;
-    char* k = 0;
-    char* v = 0;
-    (*i)++;
-
-    while(data[++(*i)] != '\0')
-    {
-        if(state == 0)
-        {
-            if(mode == 1)
-            {
-                state = 1;
-                (*i)--;
-            }
-            else if(data[*i] == '"')
-            {
-                state = 1;
-                *i += 2;
-            }
-            else nec_push(k, data[*i]);
-        }
-        if(state == 1)
-        {
-            if(data[*i] == '"') string++;
-            if(string != 1 && (data[*i] == ',' || data[*i] == '{' || data[*i] == '}' || data[*i] == '[' || data[*i] == ']'))
-            {
-                if(mode == 0) nec_push(k, '\0');
-                nec_push(v, '\0');
-
-                if(data[*i] == '{')
-                {
-                    if(mode == 0) keyappend(&k, nec_size(root.objects));
-                    nec_push(root.objects, parse(data, i, 0));
-                }
-                else if(data[*i] == '[')
-                {
-                    if(mode == 0) keyappend(&k, nec_size(root.objects));
-                    nec_push(root.objects, parse(data, i, 1));
-                }
-                else if(v[nec_size(v) - 2] == '"')
-                {
-                    if(mode == 0) keyappend(&k, nec_size(root.strings));
-                    char* value = malloc(nec_size(v) - 2);
-                    for(int j = 0; j < nec_size(v) - 1; j++) value[j] = v[j + 1];
-                    value[nec_size(v) - 3] = '\0';
-                    nec_push(root.strings, value);
-                }
-                else if(v[0] == 't' || v[0] == 'f')
-                {
-                    if(mode == 0) keyappend(&k, nec_size(root.booleans));
-                    nec_push(root.booleans, v[0] == 't' ? 1 : 0);
-                }
-                else
-                {
-                    double val = stod(v);
-                    double temp = val;
-                    if(temp < 0) temp = -val;
-                    if(temp - (int)temp == 0.0)
-                    {
-                        if(mode == 0) keyappend(&k, nec_size(root.ints));
-                        nec_push(root.ints, val);
-                    }
-                    else
-                    {
-                        if(mode == 0) keyappend(&k, nec_size(root.doubles));
-                        nec_push(root.doubles, val);
-                    }
-                }
-
-                if(mode == 0) nec_push(root.keys, k);
-                nec_free(v);
-                k = 0;
-                v = 0;
-
-                if(data[(*i)++] == '}' || data[(*i) - 1] == ']') return root;
-                state = string = 0;
-                continue;
-            }
-            else nec_push(v, data[*i]);
-        }
-        // printf("%c %d\n", data[*i], state);
-    }
-    printf("JSON: parsing error EOF.\n");
-}
+#include<json.h>
 
 int main()
 {
     // char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false}";
     // char* data = "{\"ajdi\":{\"a\":1,\"b\":423}}";
     char* data = "{\"ajdi\":[\"1\",\"423\"]}";
-    int i = 0;
-    json o = parse(data, &i, 0);
+    // json o = json_parse(data);
 
-    json ob = o.objects[json_get(&o, "ajdi")];
-    printf("k[]=%s\n", ob.strings[0]);
+    json o = json_init();
+    json_push(o, o.strings, "ajdi", "bob");
+    json_push(o, o.strings, "ajdi2", "bobby");
+
+    // json ob = o.objects[json_get(&o, "ajdi")];
+    // printf("k[]=%s\n", ob.strings[0]);
+    printf("k[]=%s\n", o.strings[json_get(&o, "ajdi")]);
 
     // printf("INTS:\n");
     // for(int i = 0; i < nec_size(o.ints); i++)
