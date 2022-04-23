@@ -57,7 +57,15 @@ unsigned int json_get(json *o, char* key)
             if(o->keys[i][j] != key[j]) break;
             if(o->keys[i][j] == '\0' && key[j] == '\0')
             {
-                return stod(&o->keys[i][j + 1]);
+                char *s = &(o->keys[i][j + 1]);
+                int v = 0;
+                int it = 0;
+                while(s[it] != '\0')
+                {
+                    v *= 10;
+                    v += s[it++];
+                }
+                return v;
             }
             if(o->keys[i][j] == '\0' || key[j] == '\0') j = -2;
             j++;
@@ -67,13 +75,14 @@ unsigned int json_get(json *o, char* key)
     return 0;
 }
 
-void keyappend(char* key, int v)
+void keyappend(char** key, int v)
 {
     while(v > 0)
     {
-        nec_push(key, v % 10);
+        nec_push(*key, v % 10);
         v *= 0.1;
     }
+    nec_push(*key, '\0');
 }
 
 json parse(char* data, int *i)
@@ -100,14 +109,19 @@ json parse(char* data, int *i)
         if(state == 1)
         {
             if(data[*i] == '"') string++;
-            if(string != 1 && (data[*i] == ',' || data[*i] == '}'))
+            if(string != 1 && (data[*i] == ',' || data[*i] == '{' || data[*i] == '}'))
             {
                 nec_push(k, '\0');
                 nec_push(v, '\0');
 
-                if(v[nec_size(v) - 2] == '"')
+                if(data[*i] == '{')
                 {
-                    keyappend(k, nec_size(root.strings));
+                    keyappend(&k, nec_size(root.objects));
+                    nec_push(root.objects, parse(data, i));
+                }
+                else if(v[nec_size(v) - 2] == '"')
+                {
+                    keyappend(&k, nec_size(root.strings));
                     char* value = malloc(nec_size(v) - 2);
                     for(int j = 0; j < nec_size(v) - 1; j++) value[j] = v[j + 1];
                     value[nec_size(v) - 3] = '\0';
@@ -115,7 +129,7 @@ json parse(char* data, int *i)
                 }
                 else if(v[0] == 't' || v[0] == 'f')
                 {
-                    keyappend(k, nec_size(root.booleans));
+                    keyappend(&k, nec_size(root.booleans));
                     nec_push(root.booleans, v[0] == 't' ? 1 : 0);
                 }
                 else
@@ -125,12 +139,12 @@ json parse(char* data, int *i)
                     if(temp < 0) temp = -val;
                     if(temp - (int)temp == 0.0)
                     {
-                        keyappend(k, nec_size(root.ints));
+                        keyappend(&k, nec_size(root.ints));
                         nec_push(root.ints, val);
                     }
                     else
                     {
-                        keyappend(k, nec_size(root.doubles));
+                        keyappend(&k, nec_size(root.doubles));
                         nec_push(root.doubles, val);
                     }
                 }
@@ -146,38 +160,40 @@ json parse(char* data, int *i)
             }
             else nec_push(v, data[*i]);
         }
-        // printf("%c %d\n", data[*i], state);
+        printf("%c %d\n", data[*i], state);
     }
     printf("error");
 }
 
 int main()
 {
-    char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false}";
+    // char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false}";
+    char* data = "{\"ajdi\":{\"a\":1,\"b\":423}}";
     int i = 0;
     json o = parse(data, &i);
 
-    // printf("k[]=%d\n", o.ints[json_get(&o, "ajdi")]);
+    json ob = o.objects[json_get(&o, "ajdi")];
+    printf("k[]=%d\n", ob.ints[json_get(&ob, "b")]);
 
-    printf("INTS:\n");
-    for(int i = 0; i < nec_size(o.ints); i++)
-    {
-        printf("%d\n", o.ints[i]);
-    }
-    printf("DOUBLES:\n");
-    for(int i = 0; i < nec_size(o.doubles); i++)
-    {
-        printf("%f\n", o.doubles[i]);
-    }
-    printf("STRINGS:\n");
-    for(int i = 0; i < nec_size(o.strings); i++)
-    {
-        printf("%s\n", o.strings[i]);
-    }
-    printf("BOOLEANS:\n");
-    for(int i = 0; i < nec_size(o.booleans); i++)
-    {
-        printf("%s\n", o.booleans[i] ? "true" : "false");
-    }
+    // printf("INTS:\n");
+    // for(int i = 0; i < nec_size(o.ints); i++)
+    // {
+    //     printf("%d\n", o.ints[i]);
+    // }
+    // printf("DOUBLES:\n");
+    // for(int i = 0; i < nec_size(o.doubles); i++)
+    // {
+    //     printf("%f\n", o.doubles[i]);
+    // }
+    // printf("STRINGS:\n");
+    // for(int i = 0; i < nec_size(o.strings); i++)
+    // {
+    //     printf("%s\n", o.strings[i]);
+    // }
+    // printf("BOOLEANS:\n");
+    // for(int i = 0; i < nec_size(o.booleans); i++)
+    // {
+    //     printf("%s\n", o.booleans[i] ? "true" : "false");
+    // }
     return 0;
 }
