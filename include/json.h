@@ -67,7 +67,7 @@ unsigned int json_get(json *o, char* key)
             if(o->keys[i][j] != key[j]) break;
             if(o->keys[i][j] == '\0' && key[j] == '\0')
             {
-                char *s = &(o->keys[i][j + 1]);
+                char *s = &(o->keys[i][j + 2]);
                 int v = 0;
                 int it = 0;
                 while(s[it] != '\0')
@@ -119,6 +119,7 @@ void parse(json *root, char* data, int *i, int mode)
 
                 if(data[*i] == '{' || data[*i] == '[')
                 {
+                    nec_push(k, 'o');
                     if(mode == 0) itonecs(&k, nec_size(root->objects));
                     json arr = json_init();
                     parse(&arr, data, i, data[*i] == '{' ? 0 : 1);
@@ -126,6 +127,7 @@ void parse(json *root, char* data, int *i, int mode)
                 }
                 else if(v[nec_size(v) - 2] == '"')
                 {
+                    nec_push(k, 's');
                     if(mode == 0) itonecs(&k, nec_size(root->strings));
                     char* value = malloc(nec_size(v) - 2);
                     for(int j = 0; j < nec_size(v) - 1; j++) value[j] = v[j + 1];
@@ -134,6 +136,7 @@ void parse(json *root, char* data, int *i, int mode)
                 }
                 else if(v[0] == 't' || v[0] == 'f')
                 {
+                    nec_push(k, 'b');
                     if(mode == 0) itonecs(&k, nec_size(root->booleans));
                     nec_push(root->booleans, v[0] == 't' ? 1 : 0);
                 }
@@ -144,11 +147,13 @@ void parse(json *root, char* data, int *i, int mode)
                     if(temp < 0) temp = -val;
                     if(temp - (int)temp == 0.0)
                     {
+                        nec_push(k, 'i');
                         if(mode == 0) itonecs(&k, nec_size(root->ints));
                         nec_push(root->ints, val);
                     }
                     else
                     {
+                        nec_push(k, 'd');
                         if(mode == 0) itonecs(&k, nec_size(root->doubles));
                         nec_push(root->doubles, val);
                     }
@@ -168,6 +173,47 @@ void parse(json *root, char* data, int *i, int mode)
         // printf("%c %d\n", data[*i], state);
     }
     printf("JSON: parsing error EOF.\n");
+}
+
+void json_to_string(json object, char** data)
+{
+    nec_push(*data, '{');
+    for(int i = 0; i < nec_size(object.keys); i++)
+    {
+        nec_push(*data, '"');
+        int j = 0;
+        while(object.keys[i][j] != '\0')
+        {
+            nec_push(*data, object.keys[i][j++]);
+        }
+        nec_push(*data, '"');
+        nec_push(*data, ':');
+        int v = 0;
+        int it = j + 2;
+        while(object.keys[i][it] != '\0')
+        {
+            v *= 10;
+            v += object.keys[i][it++];
+        }
+        it = 0;
+        if(object.keys[i][j+1] == 'i')
+        {
+            itonecs(data, object.ints[v]);
+            nec_remove_at2(char, *data, nec_size(*data) - 1);
+        }
+        if(object.keys[i][j] == 's')
+        {
+            nec_push(*data, '"');
+            while(object.strings[v][it] != '\0')
+            {
+                nec_push(*data, object.strings[v][it++]);
+            }
+            nec_push(*data, '"');
+        }
+        else printf("ERrOR = %d\n", j);
+        nec_push(*data, ',');
+    }
+    nec_push(*data, '}');
 }
 
 #define json_parse(d) ({ json o_new = json_init(); int i = 0; parse(&o_new, d, &i, 0); o_new; })
