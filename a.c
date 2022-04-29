@@ -16,30 +16,25 @@ int main()
     // char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false}";
     // char* data = "{\"ajdi\":{\"a\":1,\"b\":423}}";
     // char* data = "{\"ajdi\":[\"1\",\"423\"]}";
-    // char* data = "{\"Ime_ID\":3,\"Ime\":\"Mujo\"}";
-    // json o = json_parse(data);
-    // data = 0;
-    // json_to_string(o, &data);
+    char* data = "{\"Ime_ID\":300,\"Ime\":\"Mujo\"}";
+    json o = json_parse(data);
+    data = 0;
+    json_to_string(o, &data);
     // printf("%s\n", data);
-
-    double* a = 0;
-    for(int i = 1; i <= 100000; i++)
+    for(int i = 0; i < nec_size(data); i++)
     {
-        nec_push(a, i);
+        if(data[i] == '\0') printf("error");
+        else printf("%c", data[i]);
     }
-    // nec_push(a, 2);
-    // nec_push(a, 3);
-    // void *b = a;
-    // free(b);
-    // nec_free(b);
-    // a = b;
-    // nec_remove_at2(int, a, 0);
-
-    for(int i = 0; i < nec_size(a); i++)
-    {
-        printf("%f\n", a[i]);
-    }
-    printf("SIZE = %d\n", nec_size(a));
+    printf("\n");
+    
+    // double* slova = 0;
+    // for(int i = 1; i <= 10000; i++)
+    // {
+    //     nec_push(slova, (double)i);
+    // }
+    // nec_remove_at2(double, slova, 0);
+    // printf("%d\n", nec_size(slova));
 
     // json o = json_init();
     // json_push(o, o.strings, "ajdi", "bob");

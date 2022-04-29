@@ -25,10 +25,15 @@ double stod(char* s)
 
 void itonecs(char** s, int v)
 {
+    char* sinv = 0;
     while(v > 0)
     {
-        nec_push(*s, v % 10);
+        nec_push(sinv, '0' + (v % 10));
         v *= 0.1;
+    }
+    for(int i = nec_size(sinv) - 1; i >= 0; i--)
+    {
+        nec_push(*s, sinv[i]);
     }
     nec_push(*s, '\0');
 }
@@ -73,7 +78,7 @@ unsigned int json_get(json *o, char* key)
                 while(s[it] != '\0')
                 {
                     v *= 10;
-                    v += s[it++];
+                    v += s[it++] - '0';
                 }
                 return v;
             }
@@ -198,10 +203,17 @@ void json_to_string(json object, char** data)
         it = 0;
         if(object.keys[i][j+1] == 'i')
         {
+            // char* necs = 0;
             itonecs(data, object.ints[v]);
+            // itonecs(data, 5);
+            // nec_push(*data, '5');
             nec_remove_at2(char, *data, nec_size(*data) - 1);
+            // printf("DEJBUG = %d\n", (*data)[nec_size(*data) - 1]);
+            // printf("SAJZARA = %d\n", nec_size(*data));
+            // nec_push(*data, '!');
+            // (*data)[nec_size(*data) - 1] = '?';
         }
-        if(object.keys[i][j] == 's')
+        else if(object.keys[i][j+1] == 's')
         {
             nec_push(*data, '"');
             while(object.strings[v][it] != '\0')

@@ -13,28 +13,29 @@ typedef struct {
     nec(a)->size = s;\
 })
 #define nec_free(a) ({ void* __nec_b = nec(a); free(__nec_b); a = 0; })
-#define nec_realloc_typecast(t, a, s) a = realloc(a, s * sizeof(t) + sizeof(nec_array))
+// #define nec_realloc_typecast(t, a, s) a = realloc(a, s * sizeof(t) + sizeof(nec_array))
 #define nec_push(a, v)\
 {\
-    nec_realloc(a, nec_size(a) + 1);\
-    (a)[nec_size(a) - 1] = v;\
+    int tf = nec_size(a) + 1;\
+    nec_realloc(a, tf);\
+    (a)[nec_size(a) - 1] = (v);\
 }
 
-#define nec_push_typecast(t, a, v)\
-{\
-    void* __nec_b; t* c; (a) ?\
-    (__nec_b = (nec_array*)(a) - 1, a = __nec_b, nec_realloc_typecast(t, a, ++((nec_array*)(a))->size), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b, 0):\
-    ((nec_realloc_typecast(t, a, 1), __nec_b = (nec_array*)(a) + 1, nec(__nec_b)->size = 1, (a) = __nec_b), 0),\
-    c = (t*)(a),\
-    c[nec_size(a) - 1] = v,\
-    a = (void*)c;\
-}
+// #define nec_push_typecast(t, a, v)\
+// {\
+//     void* __nec_b; t* c; (a) ?\
+//     (__nec_b = (nec_array*)(a) - 1, a = __nec_b, nec_realloc_typecast(t, a, ++((nec_array*)(a))->size), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b, 0):\
+//     ((nec_realloc_typecast(t, a, 1), __nec_b = (nec_array*)(a) + 1, nec(__nec_b)->size = 1, (a) = __nec_b), 0),\
+//     c = (t*)(a),\
+//     c[nec_size(a) - 1] = v,\
+//     a = (void*)c;\
+// }
 
 #define nec_remove_at2(t, a, i)\
 {\
     if(i >= 0 && i < nec_size(a))\
     {\
-        void* __nec_b;\
+        void* ___nec_b;\
         void* c;\
         if(nec_size(a) == 1)\
         {\
@@ -43,16 +44,16 @@ typedef struct {
         }\
         else\
         {\
-            __nec_b = (a);\
+            ___nec_b = (a);\
             (a) = 0;\
-            (nec_realloc(a, nec_size(__nec_b) - 1), c = (nec_array*)(a) + 1, nec(c)->size = nec_size(__nec_b) - 1, (a) = c);\
+            nec_realloc(a, nec_size(___nec_b) - 1);\
             int offset = 0;\
-            for(int it = 0; it < nec_size(__nec_b); it++)\
+            for(int it = 0; it < nec_size(___nec_b); it++)\
             {\
-                if(it != i) a[it - offset] = (((t*)(__nec_b))[it]);\
+                if(it != i + 1) (a)[it - offset] = ((t*)(___nec_b))[it];\
                 else offset++;\
             }\
-            nec_free(__nec_b);\
+            nec_free(___nec_b);\
         }\
     }\
 }
