@@ -16,11 +16,10 @@ int main()
     // char* data = "{\"ajdi\":3,\"dupli\":123312.32321,\"ime\":\"bob\",\"jel\":true,\"nijel\":false}";
     // char* data = "{\"ajdi\":{\"a\":1,\"b\":423}}";
     // char* data = "{\"ajdi\":[\"1\",\"423\"]}";
-    char* data = "{\"Ime_ID\":300,\"Ime\":\"Mujo\"}";
+    char* data = "{\"Ime_ID\":300,\"Ime\":\"Mujo\",\"Nesto\":654.321,\"wasd\":true,\"obby\":{\"int\":5}}";
     json o = json_parse(data);
     data = 0;
     json_to_string(o, &data);
-    // printf("%s\n", data);
     for(int i = 0; i < nec_size(data); i++)
     {
         if(data[i] == '\0') printf("error");
@@ -42,7 +41,7 @@ int main()
 
     // json ob = o.objects[json_get(&o, "ajdi")];
     // printf("k[]=%s\n", ob.strings[0]);
-    // printf("k[]=%s\n", o.strings[json_get(&o, "ajdi")]);
+    // printf("k[]=%d\n", o.ints[json_get(&o, "Nesto")]);
 
     // printf("INTS:\n");
     // for(int i = 0; i < nec_size(o.ints); i++)

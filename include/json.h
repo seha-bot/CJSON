@@ -124,7 +124,7 @@ void parse(json *root, char* data, int *i, int mode)
 
                 if(data[*i] == '{' || data[*i] == '[')
                 {
-                    nec_push(k, 'o');
+                    nec_push(k, data[*i] == '{' ? 'o' : 'a');
                     if(mode == 0) itonecs(&k, nec_size(root->objects));
                     json arr = json_init();
                     parse(&arr, data, i, data[*i] == '{' ? 0 : 1);
@@ -198,20 +198,22 @@ void json_to_string(json object, char** data)
         while(object.keys[i][it] != '\0')
         {
             v *= 10;
-            v += object.keys[i][it++];
+            v += object.keys[i][it++] - '0';
         }
         it = 0;
         if(object.keys[i][j+1] == 'i')
         {
-            // char* necs = 0;
             itonecs(data, object.ints[v]);
-            // itonecs(data, 5);
-            // nec_push(*data, '5');
             nec_remove_at2(char, *data, nec_size(*data) - 1);
-            // printf("DEJBUG = %d\n", (*data)[nec_size(*data) - 1]);
-            // printf("SAJZARA = %d\n", nec_size(*data));
-            // nec_push(*data, '!');
-            // (*data)[nec_size(*data) - 1] = '?';
+        }
+        else if(object.keys[i][j+1] == 'd')
+        {
+            itonecs(data, object.doubles[v]);
+            (*data)[nec_size(*data) - 1] = '.';
+            double a = object.doubles[v] - (double)( (int)(object.doubles[v]) );
+            while(a - (double)( (int)(a) ) > 0.0000001) a *= 10.0;
+            itonecs(data, a);
+            nec_remove_at2(char, *data, nec_size(*data) - 1);
         }
         else if(object.keys[i][j+1] == 's')
         {
@@ -222,9 +224,50 @@ void json_to_string(json object, char** data)
             }
             nec_push(*data, '"');
         }
-        else printf("ERrOR = %d\n", j);
+        else if(object.keys[i][j+1] == 'b')
+        {
+            if(object.booleans[v])
+            {
+                nec_push(*data, 't');
+                nec_push(*data, 'r');
+                nec_push(*data, 'u');
+                nec_push(*data, 'e');
+            }
+            else
+            {
+                nec_push(*data, 'f');
+                nec_push(*data, 'a');
+                nec_push(*data, 'l');
+                nec_push(*data, 's');
+                nec_push(*data, 'e');
+            }
+        }
+        else if(object.keys[i][j+1] == 'b')
+        {
+            if(object.booleans[v])
+            {
+                nec_push(*data, 't');
+                nec_push(*data, 'r');
+                nec_push(*data, 'u');
+                nec_push(*data, 'e');
+            }
+            else
+            {
+                nec_push(*data, 'f');
+                nec_push(*data, 'a');
+                nec_push(*data, 'l');
+                nec_push(*data, 's');
+                nec_push(*data, 'e');
+            }
+        }
+        else if(object.keys[i][j+1] == 'o' || object.keys[i][j+1] == 'a')
+        {
+            json_to_string(object.objects[v], data);
+        }
+        else printf("JSON: Error.\n");
         nec_push(*data, ',');
     }
+    nec_remove_at2(char, *data, nec_size(*data) - 1);
     nec_push(*data, '}');
 }
 
