@@ -180,6 +180,66 @@ void parse(json *root, char* data, int *i, int mode)
     printf("JSON: parsing error EOF.\n");
 }
 
+void json_to_string(json object, char** data);
+void aray(json object, char** data)
+{
+    nec_push(*data, '[');
+    for(int j = 0; j < nec_size(object.ints); j++)
+    {
+        itonecs(data, object.ints[j]);
+        nec_remove_at2(char, *data, nec_size(*data) - 1);
+        nec_push(*data, ',');
+    }
+    for(int j = 0; j < nec_size(object.doubles); j++)
+    {
+        itonecs(data, object.doubles[j]);
+        (*data)[nec_size(*data) - 1] = '.';
+        double a = object.doubles[j] - (double)( (int)(object.doubles[j]) );
+        while(a - (double)( (int)(a) ) > 0.0000001) a *= 10.0;
+        itonecs(data, a);
+        nec_remove_at2(char, *data, nec_size(*data) - 1);
+        nec_push(*data, ',');
+    }
+    for(int j = 0; j < nec_size(object.strings); j++)
+    {
+        nec_push(*data, '"');
+        int it = 0;
+        while(object.strings[j][it] != '\0')
+        {
+            nec_push(*data, object.strings[j][it++]);
+        }
+        nec_push(*data, '"');
+        nec_push(*data, ',');
+    }
+    for(int j = 0; j < nec_size(object.booleans); j++)
+    {
+        if(object.booleans[j])
+        {
+            nec_push(*data, 't');
+            nec_push(*data, 'r');
+            nec_push(*data, 'u');
+            nec_push(*data, 'e');
+        }
+        else
+        {
+            nec_push(*data, 'f');
+            nec_push(*data, 'a');
+            nec_push(*data, 'l');
+            nec_push(*data, 's');
+            nec_push(*data, 'e');
+        }
+        nec_push(*data, ',');
+    }
+    for(int j = 0; j < nec_size(object.objects); j++)
+    {
+        if(nec_size(object.objects[j].keys) > 0) json_to_string(object.objects[j], data);
+        else aray(object.objects[j], data);
+        nec_push(*data, ',');
+    }
+    nec_remove_at2(char, *data, nec_size(*data) - 1);
+    nec_push(*data, ']');
+}
+
 void json_to_string(json object, char** data)
 {
     nec_push(*data, '{');
@@ -242,27 +302,13 @@ void json_to_string(json object, char** data)
                 nec_push(*data, 'e');
             }
         }
-        else if(object.keys[i][j+1] == 'b')
-        {
-            if(object.booleans[v])
-            {
-                nec_push(*data, 't');
-                nec_push(*data, 'r');
-                nec_push(*data, 'u');
-                nec_push(*data, 'e');
-            }
-            else
-            {
-                nec_push(*data, 'f');
-                nec_push(*data, 'a');
-                nec_push(*data, 'l');
-                nec_push(*data, 's');
-                nec_push(*data, 'e');
-            }
-        }
-        else if(object.keys[i][j+1] == 'o' || object.keys[i][j+1] == 'a')
+        else if(object.keys[i][j+1] == 'o')
         {
             json_to_string(object.objects[v], data);
+        }
+        else if(object.keys[i][j+1] == 'a')
+        {
+            aray(object.objects[v], data);
         }
         else printf("JSON: Error.\n");
         nec_push(*data, ',');
