@@ -7,19 +7,19 @@ typedef struct {
 #define nec_realloc(a, s)\
 ({\
     void* __nec_b;\
-    a ?\
-    ((a) = realloc(nec(a), (s) * sizeof(*(a)) + sizeof(nec_array)), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b):\
-    ((a) = realloc((a), (s) * sizeof(*(a)) + sizeof(nec_array)), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b);\
-    nec(a)->size = s;\
+    int __nec_s = (s);\
+    (a) ?\
+    ((a) = realloc(nec(a), __nec_s * sizeof(*(a)) + sizeof(nec_array)), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b):\
+    ((a) = realloc((a), __nec_s * sizeof(*(a)) + sizeof(nec_array)), __nec_b = (nec_array*)(a) + 1, (a) = __nec_b);\
+    nec(a)->size = __nec_s;\
 })
-#define nec_free(a) ({ void* __nec_b = nec(a); free(__nec_b); a = 0; })
 // #define nec_realloc_typecast(t, a, s) a = realloc(a, s * sizeof(t) + sizeof(nec_array))
-#define nec_push(a, v)\
-{\
-    int tf = nec_size(a) + 1;\
-    nec_realloc(a, tf);\
-    (a)[nec_size(a) - 1] = (v);\
-}
+#define nec_free(a) ({ void* __nec_b = nec(a); free(__nec_b); a = 0; })
+#define nec_push(ar, v)\
+({\
+    nec_realloc(ar, nec_size(ar) + 1);\
+    (ar)[nec_size(ar) - 1] = (v);\
+})
 
 // #define nec_push_typecast(t, a, v)\
 // {\
@@ -31,64 +31,34 @@ typedef struct {
 //     a = (void*)c;\
 // }
 
-#define nec_remove_at2(t, a, i)\
-{\
+#define nec_remove_at(t, a, i)\
+({\
     if(i >= 0 && i < nec_size(a))\
     {\
-        void* ___nec_b;\
-        void* c;\
         if(nec_size(a) == 1)\
         {\
             nec_free(a);\
             (a) = 0;\
         }\
+        else if(i == nec_size(a) - 1) nec_realloc(a, nec_size(a) - 1);\
         else\
         {\
-            ___nec_b = (a);\
+            void* ___nec_b = (a);\
             (a) = 0;\
             nec_realloc(a, nec_size(___nec_b) - 1);\
-            int offset = 0;\
+            int off = 0;\
             for(int it = 0; it < nec_size(___nec_b); it++)\
             {\
-                if(it != i + 1) (a)[it - offset] = ((t*)(___nec_b))[it];\
-                else offset++;\
+                if(it != i) (a)[it - off] = ((t*)(___nec_b))[it];\
+                else off++;\
             }\
             nec_free(___nec_b);\
         }\
     }\
-}
-
-//TODO: remake this function
-#define nec_remove_at(t, a, i)\
-{\
-    if(i < nec_size(a))\
-    {\
-        void* __nec_b;\
-        if(nec_size(a) == 1)\
-        {\
-            nec_free(a);\
-            a = 0;\
-        }\
-        else\
-        {\
-            t* new_a = malloc(sizeof(t) * (nec_size(a) - 1) + sizeof(nec_array)); /*This is the reason for the remake and it also doesn't work*/\
-            __nec_b = (nec_array*)new_a + 1;\
-            new_a = __nec_b;\
-            nec(new_a)->size = nec_size(a) - 1;\
-            int offset = 0;\
-            for(int it = 0; it < nec_size(a); it++)\
-            {\
-                if(it != i) new_a[it - offset] = a[it];\
-                else offset++;\
-            }\
-            nec_free(a);\
-            a = new_a;\
-        }\
-    }\
-}
+})
 
 #define nec_remove(t, a, v)\
-{\
+({\
     for(int i = 0; i < nec_size(a); i++)\
     {\
         if((a)[i] == v)\
@@ -97,10 +67,11 @@ typedef struct {
             break;\
         }\
     }\
-}
+})
 
 
 /*
 TODO:
 add nec_push_norealloc
+fix nec_push_typecast, nec_realloc_typecast
 */
